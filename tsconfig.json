@@ -7,8 +7,9 @@
 		"allowSyntheticDefaultImports": true,
 		"experimentalDecorators": true,
 		"sourceMap": true,
-		"incremental": true,
+		"incremental": false,
 		"declarationDir": "types",
+		"emitDeclarationOnly": true,
 		"skipLibCheck": true
 	},
 	"include": ["src/**/*", "test/**/*"],

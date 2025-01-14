@@ -1,15 +1,14 @@
 import { BlendMode } from "@esotericsoftware/spine-core";
 import { BlendFactor, BlendOperation, Material } from "@galacean/engine";
 
-
 const { SourceAlpha, One, DestinationColor, Zero, OneMinusSourceColor, OneMinusSourceAlpha } = BlendFactor;
 const { Add } = BlendOperation;
 
-export function setBlendMode(material: Material, blendMode: BlendMode) {
+export function setBlendMode(material: Material, blendMode: BlendMode, premultipliedAlpha: boolean) {
   const target = material.renderState.blendState.targetBlendState;
   switch (blendMode) {
     case BlendMode.Additive:
-      target.sourceColorBlendFactor = SourceAlpha;
+      target.sourceColorBlendFactor = premultipliedAlpha ? One : SourceAlpha;
       target.destinationColorBlendFactor = One;
       target.sourceAlphaBlendFactor = One;
       target.destinationAlphaBlendFactor = One;
@@ -30,7 +29,7 @@ export function setBlendMode(material: Material, blendMode: BlendMode) {
       target.colorBlendOperation = target.alphaBlendOperation = Add;
       break;
     default: // Normal blend default
-      target.sourceColorBlendFactor = SourceAlpha;
+      target.sourceColorBlendFactor = premultipliedAlpha ? One : SourceAlpha;
       target.destinationColorBlendFactor = OneMinusSourceAlpha;
       target.sourceAlphaBlendFactor = One;
       target.destinationAlphaBlendFactor = OneMinusSourceAlpha;

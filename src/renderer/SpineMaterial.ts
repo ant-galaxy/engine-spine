@@ -1,11 +1,5 @@
-import {
-  CullMode,
-  Engine,
-  Material,
-  RenderQueueType,
-  Shader,
-} from "@galacean/engine";
-import { setBlendMode } from "./util/BlendMode";
+import { CullMode, Engine, Material, RenderQueueType, Shader } from "@galacean/engine";
+import { setBlendMode } from "../util/BlendMode";
 import { BlendMode } from "@esotericsoftware/spine-core";
 
 export class SpineMaterial extends Material {
@@ -43,16 +37,12 @@ export class SpineMaterial extends Material {
   constructor(engine: Engine) {
     const shader =
       Shader.find("galacean-spine-shader") ||
-      Shader.create(
-        "galacean-spine-shader",
-        SpineMaterial._spineVS,
-        SpineMaterial._spineFS
-      );
+      Shader.create("galacean-spine-shader", SpineMaterial._spineVS, SpineMaterial._spineFS);
     super(engine, shader);
     const renderState = this.renderState;
     const target = renderState.blendState.targetBlendState;
     target.enabled = true;
-    setBlendMode(this, BlendMode.Normal);
+    setBlendMode(this, BlendMode.Normal, false);
     renderState.depthState.writeEnabled = false;
     renderState.rasterState.cullMode = CullMode.Off;
     renderState.renderQueueType = RenderQueueType.Transparent;

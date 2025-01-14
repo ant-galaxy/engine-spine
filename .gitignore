@@ -17,3 +17,7 @@ e2e/screenshots/*
 e2e/downloads/*
 e2e/diff/*
 e2e/.dev/mpa
+.husky/post-checkout
+.husky/post-commit
+.husky/pre-push
+.husky/post-merge

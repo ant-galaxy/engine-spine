@@ -1,19 +1,18 @@
 import {
-  WebGLEngine,
-  Camera,
-  Entity,
-  Vector3,
   AssetType,
-  Texture2D,
-  Logger,
-  KTX2TargetFormat,
+  Camera,
   Engine,
+  Entity,
+  KTX2TargetFormat,
+  Logger,
+  Texture2D,
+  Vector3,
+  WebGLEngine,
+  request
 } from "@galacean/engine";
-import { OrbitControl, Stats } from "@galacean/engine-toolkit";
-import * as dat from 'dat.gui';
-import { SpineAnimationRenderer, SkeletonData } from "../src/index";
-import BoundingBoxLine from './outline';
-import { SkeletonDataResource } from "../src/loader/SkeletonDataResource";
+import * as dat from "dat.gui";
+import { SpineAnimationRenderer, TextureAtlas } from "../src/index";
+import { SpineResource } from "../src/loader/SpineResource";
 
 Logger.enable();
 console.log(SpineAnimationRenderer);
@@ -23,114 +22,97 @@ document.getElementById("canvas")!.oncontextmenu = function (e) {
   e.stopPropagation();
 };
 
-const gui = new dat.GUI({ name: 'My GUI' });
+const gui = new dat.GUI({ name: "My GUI" });
 
 let animationController; // 动画切换
 let skinController; // 皮肤切换
-let slotHackController1, slotHackController2, slotHackController3; // 小人换装切换
-let attachmentController; // 小鸡部件替换
 let outline; // 包围盒
 const blobResource: any = {
   urls: [],
   params: {
-    fileExtensions: [],
+    fileExtensions: []
   }
 };
 
-const baseDemo = 'spineBoy-单json';
+const baseDemo = "spineBoy-单json";
 const demos = {
-  'spineBoy-单json': {
-    url: "https://mdn.alipayobjects.com/huamei_kz4wfo/uri/file/as/2/kz4wfo/4/mp/yKbdfgijyLGzQDyQ/spineboy/spineboy.json",
+  "spineBoy-单json": {
+    url: "https://mdn.alipayobjects.com/huamei_kz4wfo/uri/file/as/2/kz4wfo/4/mp/yKbdfgijyLGzQDyQ/spineboy/spineboy.json"
   },
-  'spineBoy-local': {
-    urls: ['/spineboy.json', '/spineboy.atlas']
-  },
-  'raptor-三文件json': {
+  "raptor-三文件json": {
     urls: [
       "https://mdn.alipayobjects.com/huamei_kz4wfo/uri/file/as/2/kz4wfo/4/mp/jdjQ6mGxWknZ7TtQ/raptor/raptor.json",
       "https://mdn.alipayobjects.com/huamei_kz4wfo/uri/file/as/2/kz4wfo/4/mp/jdjQ6mGxWknZ7TtQ/raptor/raptor.atlas",
-      "https://mdn.alipayobjects.com/huamei_kz4wfo/uri/file/as/2/kz4wfo/4/mp/jdjQ6mGxWknZ7TtQ/raptor/raptor.png",
-    ],
+      "https://mdn.alipayobjects.com/huamei_kz4wfo/uri/file/as/2/kz4wfo/4/mp/jdjQ6mGxWknZ7TtQ/raptor/raptor.png"
+    ]
   },
-  '三文件-无后缀bin': {
+  "三文件-无后缀bin": {
     urls: [
-      "https://mdn.alipayobjects.com/portal_h1wdez/afts/file/A*Go0FQ6FlurEAAAAAAAAAAAAAAQAAAQ",
-      "https://mdn.alipayobjects.com/portal_h1wdez/afts/file/A*AjmGS7wM-2UAAAAAAAAAAAAAAQAAAQ",
-      "https://mdn.alipayobjects.com/portal_h1wdez/afts/img/A*BXnORpJ85ywAAAAAAAAAAAAAAQAAAQ/original",
-    ],
-    params: {
-      fileExtensions: [
-        'bin', // skel
-        'atlas',
-        'png',
-      ],
-    }
+      "https://mdn.alipayobjects.com/portal_h1wdez/afts/file/A*Go0FQ6FlurEAAAAAAAAAAAAAAQAAAQ?a=.bin",
+      "https://mdn.alipayobjects.com/portal_h1wdez/afts/file/A*AjmGS7wM-2UAAAAAAAAAAAAAAQAAAQ?b=.atlas",
+      "https://mdn.alipayobjects.com/portal_h1wdez/afts/img/A*BXnORpJ85ywAAAAAAAAAAAAAAQAAAQ/original?c=.png"
+    ]
   },
-  'ktx2': {
+  ktx2: {
     urls: [
-      "https://mdn.alipayobjects.com/portal_h1wdez/afts/file/A*Go0FQ6FlurEAAAAAAAAAAAAAAQAAAQ",
-      "https://mdn.alipayobjects.com/portal_h1wdez/afts/file/A*AjmGS7wM-2UAAAAAAAAAAAAAAQAAAQ",
-      "https://mdn.alipayobjects.com/oasis_be/afts/img/A*i5qRTKgPlYMAAAAAAAAAAAAADkp5AQ/original/DR.ktx2",
-    ],
-    params: {
-      fileExtensions: [
-        'bin',
-        'atlas',
-      ],
-    }
+      "https://mdn.alipayobjects.com/portal_h1wdez/afts/file/A*Go0FQ6FlurEAAAAAAAAAAAAAAQAAAQ?a=.bin",
+      "https://mdn.alipayobjects.com/portal_h1wdez/afts/file/A*AjmGS7wM-2UAAAAAAAAAAAAAAQAAAQ?b=.atlas",
+      "https://mdn.alipayobjects.com/oasis_be/afts/img/A*i5qRTKgPlYMAAAAAAAAAAAAADkp5AQ/original/DR.ktx2"
+    ]
   },
-  '皮肤切换': {
+  皮肤切换: {
     urls: [
       "https://mdn.alipayobjects.com/huamei_kz4wfo/uri/file/as/2/kz4wfo/4/mp/24ejL92gvbWxsXRi/mix-and-match/mix-and-match.json",
       "https://mdn.alipayobjects.com/huamei_kz4wfo/uri/file/as/2/kz4wfo/4/mp/24ejL92gvbWxsXRi/mix-and-match/mix-and-match.atlas",
-      "https://mdn.alipayobjects.com/huamei_kz4wfo/uri/file/as/2/kz4wfo/4/mp/24ejL92gvbWxsXRi/mix-and-match/mix-and-match.png",
+      "https://mdn.alipayobjects.com/huamei_kz4wfo/uri/file/as/2/kz4wfo/4/mp/24ejL92gvbWxsXRi/mix-and-match/mix-and-match.png"
     ],
-    scene: 'changeSkin'
+    scene: "changeSkin"
   },
-  '多贴图': {
+  多贴图: {
     urls: [
       "https://mdn.alipayobjects.com/portal_h1wdez/afts/file/A*yN21QbvPtQUAAAAAAAAAAAAAAQAAAQ?af_fileName=dr.skel",
       "https://mdn.alipayobjects.com/portal_h1wdez/afts/file/A*BPMZQqwNlYQAAAAAAAAAAAAAAQAAAQ?af_fileName=dr.atlas",
       "https://mdn.alipayobjects.com/portal_h1wdez/afts/img/A*A6ObTo3ME8sAAAAAAAAAAAAAAQAAAQ/original?a=.png",
-      "https://mdn.alipayobjects.com/portal_h1wdez/afts/img/A*85eWSZYpWKgAAAAAAAAAAAAAAQAAAQ/original?b=.png",
-    ],
+      "https://mdn.alipayobjects.com/portal_h1wdez/afts/img/A*85eWSZYpWKgAAAAAAAAAAAAAAQAAAQ/original?b=.png"
+    ]
   },
-  '物理': {
+  物理: {
     urls: [
       "https://mdn.alipayobjects.com/portal_h1wdez/afts/file/A*cVzySIX09aQAAAAAAAAAAAAAAQAAAQ?af_fileName=dr.skel",
       "https://mdn.alipayobjects.com/portal_h1wdez/afts/file/A*7LzLSJLjBK4AAAAAAAAAAAAAAQAAAQ?af_fileName=dr.atlas",
-      "https://mdn.alipayobjects.com/portal_h1wdez/afts/img/A*uySHT5k_PU0AAAAAAAAAAAAAAQAAAQ/original?a=.png",
-    ],
+      "https://mdn.alipayobjects.com/portal_h1wdez/afts/img/A*uySHT5k_PU0AAAAAAAAAAAAAAQAAAQ/original?a=.png"
+    ]
   },
-  '物理-少女': {
+  "物理-少女": {
     urls: [
       "https://mdn.alipayobjects.com/portal_h1wdez/afts/file/A*Po6oQJyLdb0AAAAAAAAAAAAAAQAAAQ?a=.json",
       "https://mdn.alipayobjects.com/portal_h1wdez/afts/file/A*CnqHS5nRzTIAAAAAAAAAAAAAAQAAAQ?b=.atlas",
       "https://mdn.alipayobjects.com/portal_h1wdez/afts/img/A*WDXeRIpd-lAAAAAAAAAAAAAAAQAAAQ/original?b=.png"
     ],
-    scene: 'physic',
+    scene: "physic"
   },
-  '素材替换': {
+  素材替换: {
     url: "https://mdn.alipayobjects.com/huamei_kz4wfo/uri/file/as/2/kz4wfo/4/mp/yKbdfgijyLGzQDyQ/spineboy/spineboy.json",
-    scene: 'changeResource',
+    scene: "changeResource"
   },
-  '本地上传文件': {
+  编辑器: {
+    project: "https://mdn.alipayobjects.com/portal_h1wdez/afts/file/A*pPKPSpov008AAAAAAAAAAAAAAQAAAQ",
+    url: "/yuyouyou.json",
+    scene: "editor"
+  },
+  本地上传文件: {
     url: "https://mdn.alipayobjects.com/huamei_kz4wfo/uri/file/as/2/kz4wfo/4/mp/kx5353rrNIDn4CsX/spineboy-pro/spineboy-pro.json",
-    scene: 'upload',
-  },
+    scene: "upload"
+  }
 };
 
 WebGLEngine.create({
   canvas: "canvas",
   ktx2Loader: {
     workerCount: 4,
-    priorityFormats: [
-      KTX2TargetFormat.ASTC,
-      KTX2TargetFormat.ETC,
-      KTX2TargetFormat.PVRTC,
-    ],
-  },
-}).then((engine) => {
+    priorityFormats: [KTX2TargetFormat.ASTC, KTX2TargetFormat.ETC, KTX2TargetFormat.PVRTC]
+  }
+}).then(async (engine) => {
   engine.canvas.resizeByClientSize();
   engine.run();
 
@@ -141,7 +123,7 @@ WebGLEngine.create({
 
   const cameraEntity = root.createChild("camera_node");
   const camera = cameraEntity.addComponent(Camera);
-  cameraEntity.transform.position = new Vector3(0, 0, 2000);
+  cameraEntity.transform.position = new Vector3(0, 0, 20);
   camera.nearClipPlane = 0.001;
   camera.farClipPlane = 20000;
 
@@ -150,45 +132,51 @@ WebGLEngine.create({
 
   loadSpine(root, engine, demos[baseDemo]);
 
-  gui.add({ name: baseDemo }, 'name', Object.keys(demos)).onChange((demoName) => {
-    const spineEntity = root.findByName('spine-entity');
+  gui.add({ name: baseDemo }, "name", Object.keys(demos)).onChange((demoName) => {
+    const spineEntity = root.findByName("spine-entity");
     if (spineEntity) {
       spineEntity.destroy();
     }
-		loadSpine(root, engine, demos[demoName]);
-	});
+    loadSpine(root, engine, demos[demoName]);
+  });
 });
 
 async function loadSpine(root: Entity, engine: Engine, resource) {
-  let skeletonDataResource: SkeletonDataResource | null = null;
+  let spineResource: SpineResource | null = null;
   const { scene } = resource;
-  try {
-    skeletonDataResource = (await engine.resourceManager.load({
-      ...resource,
-      type: 'spine'
-    })) as SkeletonDataResource;
-  } catch (err) {
-    console.error('spine asset load error: ', err);
+  if (scene === "editor") {
+    const data = await request(resource.project, { type: "json" });
+    // @ts-ignore
+    engine.resourceManager.initVirtualResources(data.files);
   }
-  if (!skeletonDataResource) return;
-  if (scene === 'upload') {
+  try {
+    spineResource = (await engine.resourceManager.load({
+      ...resource,
+      type: "spine"
+    })) as SpineResource;
+  } catch (err) {
+    console.error("spine asset load error: ", err);
+  }
+
+  if (!spineResource) return;
+  if (scene === "upload") {
     console.log(blobResource);
     loadSpine(root, engine, blobResource);
     return;
   }
-  console.log('spine asset loaded =>', skeletonDataResource.skeletonData);
+  console.log("spine asset loaded =>", spineResource.skeletonData);
   removeController();
-  const animationNames = skeletonDataResource.skeletonData.animations.map(item => item.name);
+  const animationNames = spineResource.skeletonData.animations.map((item) => item.name);
   const firstAnimation = animationNames[0];
 
-  const spineEntity = new Entity(engine, 'spine-entity');
-  spineEntity.transform.setPosition(-25 + Math.random() * 50, -250, 0);
+  const spineEntity = new Entity(engine, "spine-entity");
+  spineEntity.transform.setPosition(0, -2.5, 0);
   const spineAnimation = spineEntity.addComponent(SpineAnimationRenderer);
-  spineAnimation.defaultState.scale = 1;
-  if (scene === 'physic') {
-    spineAnimation.defaultState.scale = 0.5;
+  if (scene === "physic") {
+    spineAnimation.premultipliedAlpha = true;
+    spineEntity.transform.setScale(0.5, 0.5, 0.5);
   }
-  spineAnimation.resource = skeletonDataResource;
+  spineAnimation.resource = spineResource;
   root.addChild(spineEntity);
 
   // const clone = spineEntity.clone();
@@ -210,18 +198,19 @@ async function loadSpine(root: Entity, engine: Engine, resource) {
   // }, 67);
 
   spineAnimation.state.setAnimation(0, firstAnimation, true);
-  animationController = gui.add({ animation: firstAnimation  }, 'animation', animationNames).onChange((animationName) => {
-		spineAnimation.state.setAnimation(0, animationName, true);
-	});
+  animationController = gui
+    .add({ animation: firstAnimation }, "animation", animationNames)
+    .onChange((animationName) => {
+      spineAnimation.state.setAnimation(0, animationName, true);
+    });
 
-  if (scene === 'changeSkin') {
+  if (scene === "changeSkin") {
     handleChangeSkinScene(spineAnimation);
   }
 
-  if (scene === 'changeResource') {
+  if (scene === "changeResource") {
     handleChangeResource(engine, spineAnimation);
   }
-
 }
 
 function handleChangeSkinScene(spineAnimation: SpineAnimationRenderer) {
@@ -229,19 +218,19 @@ function handleChangeSkinScene(spineAnimation: SpineAnimationRenderer) {
   skeleton.setSkinByName("full-skins/girl"); // 1. Set the active skin
   skeleton.setSlotsToSetupPose(); // 2. Use setup pose to set base attachments.
   const info = {
-    skin: "full-skins/girl",
+    skin: "full-skins/girl"
   };
   skinController = gui
-  .add(info, "skin", [
-    "full-skins/girl",
-    "full-skins/girl-blue-cape",
-    "full-skins/girl-spring-dress",
-    "full-skins/boy",
-  ])
-  .onChange((skinName) => {
-    skeleton.setSkinByName(skinName); // 1. Set the active skin
-    skeleton.setSlotsToSetupPose(); // 2. Use setup pose to set base attachments.
-  });
+    .add(info, "skin", [
+      "full-skins/girl",
+      "full-skins/girl-blue-cape",
+      "full-skins/girl-spring-dress",
+      "full-skins/boy"
+    ])
+    .onChange((skinName) => {
+      skeleton.setSkinByName(skinName); // 1. Set the active skin
+      skeleton.setSlotsToSetupPose(); // 2. Use setup pose to set base attachments.
+    });
 }
 
 async function handleChangeResource(engine: Engine, spineAnimation: SpineAnimationRenderer) {
@@ -249,12 +238,12 @@ async function handleChangeResource(engine: Engine, spineAnimation: SpineAnimati
     urls: [
       "https://mdn.alipayobjects.com/huamei_kz4wfo/uri/file/as/2/kz4wfo/4/mp/jdjQ6mGxWknZ7TtQ/raptor/raptor.json",
       "https://mdn.alipayobjects.com/huamei_kz4wfo/uri/file/as/2/kz4wfo/4/mp/jdjQ6mGxWknZ7TtQ/raptor/raptor.atlas",
-      "https://mdn.alipayobjects.com/huamei_kz4wfo/uri/file/as/2/kz4wfo/4/mp/jdjQ6mGxWknZ7TtQ/raptor/raptor.png",
+      "https://mdn.alipayobjects.com/huamei_kz4wfo/uri/file/as/2/kz4wfo/4/mp/jdjQ6mGxWknZ7TtQ/raptor/raptor.png"
     ],
-    type: 'spine'
-  })) as SkeletonDataResource;
+    type: "spine"
+  })) as SpineResource;
   setTimeout(() => {
-    spineAnimation.defaultState.animationName = 'roar';
+    spineAnimation.defaultConfig.animationName = "roar";
     spineAnimation.resource = newResource;
   }, 1000);
 }
@@ -270,15 +259,15 @@ function removeController() {
   }
 }
 
-window.onload = function() {
-  const fileInput = document.getElementById('fileInput') as HTMLInputElement;
-  const linkContainer = document.getElementById('linkContainer');
-  fileInput.addEventListener('change', function(event) {
+window.onload = function () {
+  const fileInput = document.getElementById("fileInput") as HTMLInputElement;
+  const linkContainer = document.getElementById("linkContainer");
+  fileInput.addEventListener("change", function (event) {
     const files = fileInput.files;
     if (files) {
       // Clear previous links
       if (linkContainer) {
-        linkContainer.innerHTML = '';
+        linkContainer.innerHTML = "";
       }
 
       // Create and display a temporary link for each file
@@ -295,9 +284,9 @@ window.onload = function() {
 
 function getFileExtension(file: File): string {
   const fileName = file.name;
-  const lastDotIndex = fileName.lastIndexOf('.');
+  const lastDotIndex = fileName.lastIndexOf(".");
   if (lastDotIndex === -1 || lastDotIndex === 0) {
-    return '';
+    return "";
   }
   return fileName.substring(lastDotIndex + 1);
 }
