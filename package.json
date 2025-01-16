@@ -9,7 +9,7 @@
     "@esotericsoftware/spine-core": "~4.2.66"
   },
   "peerDependencies": {
-    "@galacean/engine": ">=1.3.20"
+    "@galacean/engine": ">=1.4.0"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
@@ -20,7 +20,7 @@
     "@babel/plugin-transform-object-assign": "^7.25.9",
     "@babel/preset-env": "^7.26.0",
     "@babel/preset-typescript": "^7.26.0",
-    "@galacean/engine": "^1.3.24",
+    "@galacean/engine": "^1.4.0",
     "@galacean/engine-toolkit": "beta",
     "@rollup/plugin-babel": "^5.3.1",
     "@rollup/plugin-commonjs": "^16.0.0",
